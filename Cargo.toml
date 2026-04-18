@@ -1,14 +1,8 @@
 [package]
-name = "ron-edit"
+name = "ron-next"
 version = "0.2.0"
-edition = "2021"
-categories = ["encoding"]
-description = "ron parser preserving all syntax information"
-keywords = ["parser"]
-license = "MIT OR Apache-2.0"
-readme = "README.md"
-repository = "https://github.com/ModProg/ron-edit"
-documentation = "https://docs.rs/ron-edit"
+repository = "https://github.com/Wilovy09/ron-edit"
+documentation = "https://docs.rs/ron-next"
 
 [package.metadata.docs.rs]
 all-features = true
