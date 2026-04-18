@@ -14,7 +14,7 @@ pub enum Value<'s> {
     Tuple(Tuple<'s>),
     Struct(Struct<'s>),
 }
-pub(crate) fn value(input: &str) -> IResult<Value> {
+pub(crate) fn value(input: &str) -> IResult<'_, Value<'_>> {
     alt((
         map(value_int, Value::Int),
         map(value_float, Value::Float),
@@ -31,7 +31,7 @@ pub(crate) fn value(input: &str) -> IResult<Value> {
 #[apply(ast)]
 #[derive(Display)]
 pub struct Int<'s>(&'s str);
-fn value_int(s: &str) -> IResult<Int> {
+fn value_int(s: &str) -> IResult<'_, Int<'_>> {
     map(
         recognize(tuple((
             sign,
@@ -47,14 +47,14 @@ fn value_int(s: &str) -> IResult<Int> {
     )(s)
 }
 
-fn sign(s: &str) -> IResult<Option<char>> {
+fn sign(s: &str) -> IResult<'_, Option<char>> {
     opt(alt((char('+'), char('-'))))(s)
 }
 
 #[apply(ast)]
 #[derive(Display)]
 pub struct Float<'s>(&'s str);
-fn value_float(s: &str) -> IResult<Float> {
+fn value_float(s: &str) -> IResult<'_, Float<'_>> {
     map(
         // TODO test `double`
         recognize(tuple((
@@ -83,11 +83,11 @@ pub enum Str<'s> {
     #[display(fmt = "r{0}\"{content}\"{0}", "\"#\".repeat(*pounds)")]
     Raw { pounds: usize, content: &'s str },
 }
-fn value_str(s: &str) -> IResult<Str> {
+fn value_str(s: &str) -> IResult<'_, Str<'_>> {
     alt((
         map(
             preceded(
-                char::<&str, Error>('"'),
+                char('"'),
                 cut(terminated(
                     recognize(many0(alt((
                         tag("\\\""),
@@ -104,7 +104,7 @@ fn value_str(s: &str) -> IResult<Str> {
     ))(s)
 }
 
-fn raw_string(s: &str) -> IResult<(usize, &str)> {
+fn raw_string(s: &str) -> IResult<'_, (usize, &str)> {
     let (s, _) = char('r')(s)?;
     let (s, pounds) = many0_count(char('#'))(s)?;
     let terminator = format!("\"{}", "#".repeat(pounds));
@@ -124,10 +124,10 @@ fn raw_string(s: &str) -> IResult<(usize, &str)> {
 #[derive(Display)]
 #[display(fmt = "'{_0}'")]
 pub struct Char<'s>(pub &'s str);
-fn value_char(s: &str) -> IResult<Char> {
+fn value_char(s: &str) -> IResult<'_, Char<'_>> {
     map(
         preceded(
-            char::<&str, Error>('\''),
+            char('\''),
             cut(terminated(tag("\\'").or(is_not("'")), char('\''))),
         ),
         Char,
@@ -138,7 +138,7 @@ fn value_char(s: &str) -> IResult<Char> {
 #[derive(Display)]
 #[display(fmt = "[{_0}]")]
 pub struct List<'s>(pub Separated<'s, Value<'s>>);
-fn value_list(s: &str) -> IResult<List> {
+fn value_list(s: &str) -> IResult<'_, List<'_>> {
     map(
         preceded(char('['), cut(terminated(separated(value), char(']')))),
         List,
@@ -175,9 +175,9 @@ impl<'s> Display for MapItem<'s> {
 #[display(fmt = "{{{_0}}}")]
 pub struct Map<'s>(pub Separated<'s, MapItem<'s>>);
 
-fn value_map(s: &str) -> IResult<Map> {
+fn value_map(s: &str) -> IResult<'_, Map<'_>> {
     context(
-        "map",
+        "Map",
         map(
             preceded(
                 char('{'),
@@ -192,17 +192,15 @@ fn value_map(s: &str) -> IResult<Map> {
                             ws_lead(value),
                         ))
                         .map(
-                            |(_leading_ws, attributes, key, after_key, _, value)| {
-                                MapItem {
-                                    attributes: if attributes.is_empty() {
-                                        None
-                                    } else {
-                                        Some(attributes)
-                                    },
-                                    key,
-                                    after_key,
-                                    value,
-                                }
+                            |(_leading_ws, attributes, key, after_key, _, value)| MapItem {
+                                attributes: if attributes.is_empty() {
+                                    None
+                                } else {
+                                    Some(attributes)
+                                },
+                                key,
+                                after_key,
+                                value,
                             },
                         ),
                     ),
@@ -221,7 +219,7 @@ pub struct Tuple<'s> {
     pub ident: Option<WsFollowed<'s, &'s str>>,
     pub fields: Separated<'s, Value<'s>>,
 }
-fn value_tuple(s: &str) -> IResult<Tuple> {
+fn value_tuple(s: &str) -> IResult<'_, Tuple<'_>> {
     map(
         pair(
             opt(ws_followed(ident)),
@@ -246,7 +244,7 @@ pub struct Struct<'s> {
     pub ident: Option<WsFollowed<'s, &'s str>>,
     pub fields: Separated<'s, NamedField<'s>>,
 }
-fn value_struct(s: &str) -> IResult<Struct> {
+fn value_struct(s: &str) -> IResult<'_, Struct<'_>> {
     context(
         "value struct",
         map(

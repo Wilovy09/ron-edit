@@ -230,7 +230,7 @@ impl<T: Display> Display for Separated<'_, T> {
 #[apply(ast)]
 pub struct ExtentionIdent {}
 
-fn file(input: &str) -> IResult<File> {
+fn file(input: &str) -> IResult<'_, File<'_>> {
     map(
         tuple((
             context("attributes", many0(ws_lead(extention_attr))),
@@ -263,7 +263,7 @@ fn dbg_dmp<'a, O>(
     }
 }
 
-fn extention_attr(input: &str) -> IResult<Attribute> {
+fn extention_attr(input: &str) -> IResult<'_, Attribute<'_>> {
     map(
         tuple((
             char('#'),
@@ -307,7 +307,7 @@ fn extention_attr(input: &str) -> IResult<Attribute> {
     )(input)
 }
 
-fn inline_attribute(input: &str) -> IResult<InlineAttribute> {
+fn inline_attribute(input: &str) -> IResult<'_, InlineAttribute<'_>> {
     context(
         "inline_attribute",
         preceded(
@@ -358,21 +358,21 @@ fn inline_attribute(input: &str) -> IResult<InlineAttribute> {
     )(input)
 }
 
-fn ident(input: &str) -> IResult<&str> {
+fn ident(input: &str) -> IResult<'_, &str> {
     alt((
         recognize(pair(
             tag("r#"),
             cut(many1(alt((take_while1(is_xid_continue), is_a("+-."))))),
         )),
         recognize(pair(
-            // TODO make issue about adding a take_one(fn(char)->bool)
+            // TODO make issue about adding a take_one(fn(Char)->bool)
             alt((tag("_"), take_while_m_n(1, 1, is_xid_start))),
             take_while(is_xid_continue),
         )),
     ))(input)
 }
 
-fn block_comment(input: &str) -> IResult<Ws> {
+fn block_comment(input: &str) -> IResult<'_, Ws<'_>> {
     map(
         delimited(
             tag("/*"),
@@ -387,7 +387,7 @@ fn block_comment(input: &str) -> IResult<Ws> {
     )(input)
 }
 
-fn ws(input: &str) -> IResult<Whitespace> {
+fn ws(input: &str) -> IResult<'_, Whitespace<'_>> {
     map(
         many0(alt((
             map(is_a("\n\t\r "), Ws::Space),

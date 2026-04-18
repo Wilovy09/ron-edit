@@ -1,6 +1,9 @@
 [package]
 name = "ron-next"
 version = "0.2.0"
+description = "Internal library for Grow-rs"
+edition = "2021"
+license = "MIT"
 repository = "https://github.com/Wilovy09/ron-edit"
 documentation = "https://docs.rs/ron-next"
 
